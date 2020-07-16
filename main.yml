@@ -52,8 +52,52 @@
         state: latest
       when: 'GNOME Desktop' not in ansible_facts.packages and ansible_distribution == "CentOS"
 
+    - name: CentOS - desktop config
+      shell: echo "exec gnome-session" >> ~/.xinitrc && sudo systemctl set-default graphical.target
+
 
 # Role 2 - Linux - Install CAS agents and necessary packages
+    # Install required packages
+    - name: Ubuntu - install required packages
+      package:
+        - name: "{{ item }}"
+        - state: latest
+      with_items:
+        - usb-vhci-dkms
+      when: ansible_distribution == "Ubuntu"
+
+    - name: CentOS - install required packages
+      package:
+        - name: "{{ item }}"
+        - state: latest
+      with_items:
+        - usb-vhci
+      when: ansible_distribution == "CentOS"
+
+    # Install CAS agent
+    - name: Ubuntu - install Teradici repo
+      apt:
+        name: https://downloads.teradici.com/ubuntu/teradici-repo-$(lsb_release -cs)-latest.deb
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Ubuntu - install standard agent
+      apt:
+        name: pcoip-agent-standard
+        state: present
+      when: ansible_distribution == "Ubuntu"
+
+    - name: CentOS - install Teradici repo
+      yum:
+        name: https://downloads.teradici.com/rhel/teradici-repo-latest.noarch.rpm
+        state: present
+      when: ansible_distribution == "CentOS"
+
+    # Register the agent
+    - name: Register the agent
+      shell: "pcoip-register-host --registration-code={{ reg_code }}"
+
+    #
 
 # Role 3 - Windows
 
