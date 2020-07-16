@@ -1,0 +1,60 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+
+
+  vars_files:
+    - group_vars/vars.yml
+
+  tasks:
+
+# Role 1 - Linux fresh minimal install
+  # Update the OSs and reboot them
+    - name: Update the OS
+      package:
+        name: "*"
+        state: latest
+
+    - name: Reboot after updates
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+
+    - name: Wait for 10 seconds for system startup
+      pause:
+        seconds: 10
+
+    - name: Wait for instance reboot
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 60
+
+
+    # Verify that desktop env's exist and install them if they don't
+
+    - name: Verify desktop environment is installed
+      package_facts:
+        manager: "auto"
+      register: desktop
+
+    - name: Ubuntu - install desktop environment and necessary packages
+      package:
+        name: ubuntu-desktop
+        state: latest
+      when: 'ubuntu-desktop' not in ansible_facts.packages and ansible_distribution == "Ubuntu"
+
+    - name: CentOS - install desktop environment and necessary packages
+      package:
+        name: GNOME Desktop
+        state: latest
+      when: 'GNOME Desktop' not in ansible_facts.packages and ansible_distribution == "CentOS"
+
+
+# Role 2 - Linux - Install CAS agents and necessary packages
+
+# Role 3 - Windows
+
+
